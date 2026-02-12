@@ -1,78 +1,72 @@
+import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    const { genre, teamId } = await request.json()
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
 
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { joinCode } = await request.json()
-
-    if (!joinCode) {
-      return NextResponse.json({ error: 'Join code required' }, { status: 400 })
-    }
-
-    // Find team by join code
+    // 1. Get Team & Check Credits
     const { data: team, error: teamError } = await supabase
       .from('teams')
-      .select('*')
-      .eq('join_code', joinCode.toUpperCase())
+      .select('id, song_credits_remaining')
+      .eq('id', teamId)
       .single()
 
     if (teamError || !team) {
-      return NextResponse.json(
-        { error: 'Invalid join code. Please check and try again.' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
     }
 
-    // Check if user is already a member
-    const { data: existingMember } = await supabase
-      .from('team_members')
-      .select('*')
-      .eq('team_id', team.id)
-      .eq('user_id', session.user.id)
+    if (team.song_credits_remaining < 1) {
+      return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 })
+    }
+
+    // 2. Find unused accomplishments
+    const { data: accomplishments, error: accError } = await supabase
+        .from('accomplishments')
+        .select('id, text')
+        .eq('team_id', teamId)
+        .eq('used_in_song', false)
+
+    if (accError) throw accError
+    if (!accomplishments || accomplishments.length === 0) {
+        return NextResponse.json({ error: 'No new accomplishments to generate a song from' }, { status: 400 })
+    }
+
+    // 3. Create Song Record
+    const { data: song, error: songError } = await supabase
+      .from('songs')
+      .insert({
+        team_id: teamId,
+        status: 'generating',
+        genre: genre,
+        created_by_user_id: user.id,
+      })
+      .select()
       .single()
 
-    if (existingMember) {
-      return NextResponse.json(
-        { error: 'You are already a member of this team', teamId: team.id },
-        { status: 409 }
-      )
-    }
+    if (songError) throw songError
 
-    // Add user to team
-    const { error: memberError } = await supabase
-      .from('team_members')
-      .insert({
-        team_id: team.id,
-        user_id: session.user.id,
-        role: 'member',
-      })
+    // 4. Link Accomplishments & Deduct Credit
+    const accomplishmentIds = accomplishments.map(a => a.id)
+    await supabase
+        .from('accomplishments')
+        .update({ used_in_song: true, used_in_song_id: song.id })
+        .in('id', accomplishmentIds)
 
-    if (memberError) {
-      console.error('Error adding team member:', memberError)
-      return NextResponse.json(
-        { error: 'Failed to join team. Please try again.' },
-        { status: 500 }
-      )
-    }
+    await supabase
+      .from('teams')
+      .update({ song_credits_remaining: team.song_credits_remaining - 1 })
+      .eq('id', teamId)
 
-    return NextResponse.json({
-      success: true,
-      teamId: team.id,
-      teamName: team.name,
-      message: `Successfully joined ${team.name}!`,
-    })
-  } catch (error) {
-    console.error('Join team error:', error)
-    return NextResponse.json(
-      { error: 'Failed to join team' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true, songId: song.id, remainingCredits: team.song_credits_remaining - 1 })
+
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

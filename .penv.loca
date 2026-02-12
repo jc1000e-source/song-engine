@@ -1,0 +1,24 @@
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://djplawycuzbdaoeqxlbs.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=b95c11e7ab79a5d097de
+SUPABASE_SERVICE_ROLE_KEY=XggmTGP/KgqcXPdNlUWRHst7ECJsaoYAkOrJG1boJX0N5lCPxwQNA3aboFEjzec5RruDq988ZTKa43CIPv4CCA==
+
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_51Syzd95qQbGhbq4fVp61aAObRuFfRBKFsI1XV61FpFTZDETqyNcHkdHrqWtcDuAho50ILwleCmtGgRJhRUdGG50F00ezvWQinr
+
+STRIPE_SECRET_KEY=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
+
+STRIPE_WEBHOOK_SECRET=whsec_bG8XfBaGfymuebziBM6KtblR4rIvgv5h
+
+# Stripe Price IDs (create these in Stripe Dashboard)
+STRIPE_PRICE_ID_STARTER=price_1SyzoG5qQbGhbq4fyU0WpQhc
+STRIPE_PRICE_ID_PRO=price_1SyztR5qQbGhbq4f5GkfrSgU
+STRIPE_PRICE_ID_TEAM=price_1Syzwd5qQbGhbq4fazhcDo7n
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+
+# Song Generation API (Your Custom Vercel API)
+SONG_GENERATION_API_URL=https://song-engine-maaj.vercel.app/api/generate-song
+SONG_GENERATION_API_KEY=se_1NFgw761oUD0n3yF7
