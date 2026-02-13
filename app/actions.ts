@@ -71,6 +71,6 @@ export async function removeTeamMember(teamId: string, memberId: string) {
     throw new Error('Failed to remove member from the database.')
   }
 
-  revalidatePath(`/team?id=${teamId}`)
+  revalidatePath('/team')
   return { success: true }
 }
