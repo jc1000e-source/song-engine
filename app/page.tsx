@@ -1,212 +1,169 @@
-import { createClient } from '@/lib/supabase/server'
-import { notFound, redirect } from 'next/navigation'
-import { redirect, notFound } from 'next/navigation'
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Download, Music, Calendar } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft } from 'lucide-react'
-import TeamMembers from '../../team-members-client'
-import { JoinCodeClient } from '../../join-code-client'
+import { ArrowRight, Check, Music, Users, Zap } from 'lucide-react'
 
-export default async function SongPage(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-export default async function TeamManagementPage(props: { searchParams: Promise<{ id?: string }> }) {
-  const searchParams = await props.searchParams;
-  const supabase = await createClient()
+export default function HomePage() {
+  const [user, setUser] = useState<any>(null)
+  const supabase = createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: song } = await supabase
-    .from('songs')
-    .select('*, teams(name)')
-    .eq('id', params.id)
-    .single()
-  // VIEW: SINGLE TEAM MANAGEMENT
-  if (searchParams.id) {
-    const teamId = searchParams.id;
-
-  if (!song) {
-    notFound()
-  }
-    const { data: teamData } = await supabase
-      .from('teams')
-      .select('*, team_members!inner(role)')
-      .eq('id', teamId)
-      .eq('team_members.user_id', user.id)
-      .single();
-
-  // Verify user belongs to the team that owns the song
-  const { data: membership } = await supabase
-    .from('team_members')
-    .select('id')
-    .eq('team_id', song.team_id)
-    .eq('user_id', user.id)
-    .single()
-    if (!teamData) {
-      // User is not a member of this team or team doesn't exist
-      notFound();
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
     }
-
-  if (!membership) {
-    // User is not in the team that owns this song
-    redirect('/dashboard')
-  }
-    const userRole = teamData.team_members[0].role;
-    const isOwner = userRole === 'owner';
-
-  const date = new Date(song.created_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-    const { data: membersData } = await supabase
-      .from('team_members')
-      .select('role, profiles(id, full_name, email)')
-      .eq('team_id', teamId)
-      .order('created_at');
+    getUser()
+  }, [supabase.auth])
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="mb-6">
-        <Button variant="ghost" size="sm" asChild className="pl-0 hover:pl-0 hover:bg-transparent text-muted-foreground hover:text-foreground">
-          <Link href="/dashboard">
-    const members = membersData?.map(m => ({
-        id: m.profiles.id,
-        fullName: m.profiles.full_name,
-        email: m.profiles.email,
-        role: m.role,
-    })) || [];
+    <div className="flex flex-col min-h-screen bg-black text-white">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-xl">
+            <span className="text-2xl">🎵</span>
+            <span>SongTeam</span>
+          </div>
+          <nav className="flex items-center gap-4">
+            {user ? (
+              <Button asChild variant="default" className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-medium hover:text-purple-400 transition-colors">
+                  Sign In
+                </Link>
+                <Button asChild variant="default" className="bg-white text-black hover:bg-gray-200">
+                  <Link href="/signup">Get Started</Link>
+                </Button>
+              </>
+            )}
+          </nav>
+        </div>
+      </header>
 
-    return (
-      <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
-        <Button variant="ghost" asChild className="pl-0 text-muted-foreground hover:text-foreground">
-          <Link href="/team">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-            All Teams
-          </Link>
-        </Button>
-      </div>
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="py-20 md:py-32 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-black z-0" />
+          <div className="container mx-auto px-4 relative z-10 text-center">
+            <div className="inline-flex items-center rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-sm text-purple-300 mb-6">
+              <span className="flex h-2 w-2 rounded-full bg-purple-500 mr-2 animate-pulse"></span>
+              AI-Powered Team Anthems
+            </div>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-purple-400">
+              Turn Team Wins <br />
+              Into Hit Songs
+            </h1>
+            <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+              Celebrate your team's accomplishments with custom, professional-grade songs generated in minutes. No musical talent required.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild size="lg" className="bg-purple-600 hover:bg-purple-700 text-white px-8 h-12 text-lg">
+                <Link href="/signup">
+                  Start Creating <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="border-white/20 hover:bg-white/10 text-white h-12 text-lg">
+                <Link href="#pricing">View Pricing</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Main Content - Player & Info */}
-        <div className="md:col-span-2 space-y-6">
-          <Card className="overflow-hidden border-purple-500/20 shadow-lg shadow-purple-500/5">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-8 text-white">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-xs font-semibold transition-colors">
-                    {song.genre}
-                  </div>
-                  <h1 className="text-3xl font-bold tracking-tight">{song.title || 'Untitled Track'}</h1>
-                  <p className="text-purple-100 flex items-center gap-2">
-                    <Music className="h-4 w-4" />
-                    {song.teams?.name}
-                  </p>
+        {/* Features Grid */}
+        <section className="py-20 bg-zinc-900/50 border-y border-white/5">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-colors">
+                <div className="h-12 w-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4 text-purple-400">
+                  <Users className="h-6 w-6" />
                 </div>
+                <h3 className="text-xl font-bold mb-2">Track Wins</h3>
+                <p className="text-gray-400">Log team accomplishments throughout the week. Everyone contributes to the lyrics.</p>
+              </div>
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-colors">
+                <div className="h-12 w-12 rounded-lg bg-blue-500/20 flex items-center justify-center mb-4 text-blue-400">
+                  <Music className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Generate Music</h3>
+                <p className="text-gray-400">Choose from 10+ genres like Rap, Rock, or EDM. AI composes and produces the track.</p>
+              </div>
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-colors">
+                <div className="h-12 w-12 rounded-lg bg-pink-500/20 flex items-center justify-center mb-4 text-pink-400">
+                  <Zap className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Instant Results</h3>
+                <p className="text-gray-400">Get a professional 90-second song in minutes. Download, share, and celebrate.</p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="py-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
+              <p className="text-gray-400">Pay as you go. Credits never expire.</p>
+            </div>
             
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                {song.status === 'completed' && song.audio_url ? (
-                  <div className="bg-slate-50 p-4 rounded-lg border">
-                    <audio controls className="w-full" src={song.audio_url}>
-                      Your browser does not support the audio element.
-                    </audio>
-                  </div>
-                ) : (
-                  <div className="p-8 text-center border-2 border-dashed rounded-lg bg-slate-50">
-                    <p className="text-muted-foreground">
-                      {song.status === 'generating' ? 'Song is currently generating...' : 'Song generation failed or is pending.'}
-                    </p>
-                  </div>
-                )}
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              <div className="rounded-2xl border border-white/10 bg-zinc-900/50 p-8 flex flex-col">
+                <h3 className="text-lg font-medium text-gray-300 mb-2">Starter Pack</h3>
+                <div className="text-4xl font-bold mb-6">$20</div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  <li className="flex items-center text-gray-300"><Check className="h-5 w-5 text-purple-500 mr-2" /> 4 Song Credits</li>
+                  <li className="flex items-center text-gray-300"><Check className="h-5 w-5 text-purple-500 mr-2" /> $5.00 per song</li>
+                  <li className="flex items-center text-gray-300"><Check className="h-5 w-5 text-purple-500 mr-2" /> All Genres Included</li>
+                </ul>
+                <Button asChild className="w-full bg-white/10 hover:bg-white/20 text-white">
+                  <Link href="/signup">Get Started</Link>
+                </Button>
+              </div>
 
-                <div className="flex flex-wrap gap-3">
-                  {song.audio_url && (
-                    <Button asChild>
-                      <a href={song.audio_url} download target="_blank" rel="noopener noreferrer">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download MP3
-                      </a>
-                    </Button>
-                  )}
+              <div className="rounded-2xl border border-purple-500/50 bg-purple-900/10 p-8 flex flex-col relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+                  Most Popular
                 </div>
+                <h3 className="text-lg font-medium text-purple-300 mb-2">Pro Pack</h3>
+                <div className="text-4xl font-bold mb-6">$75</div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  <li className="flex items-center text-white"><Check className="h-5 w-5 text-purple-400 mr-2" /> 20 Song Credits</li>
+                  <li className="flex items-center text-white"><Check className="h-5 w-5 text-purple-400 mr-2" /> $3.75 per song</li>
+                  <li className="flex items-center text-white"><Check className="h-5 w-5 text-purple-400 mr-2" /> Priority Generation</li>
+                </ul>
+                <Button asChild className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                  <Link href="/signup">Get Started</Link>
+                </Button>
               </div>
-            </CardContent>
-          </Card>
 
-        <div className="grid gap-8 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Lyrics</CardTitle>
-              <CardTitle>{teamData.name}</CardTitle>
-              <CardDescription>Invite others with this join code.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-muted-foreground bg-slate-50 p-6 rounded-lg border">
-                {song.lyrics || 'Lyrics not available yet.'}
+              <div className="rounded-2xl border border-white/10 bg-zinc-900/50 p-8 flex flex-col">
+                <h3 className="text-lg font-medium text-gray-300 mb-2">Team Pack</h3>
+                <div className="text-4xl font-bold mb-6">$200</div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  <li className="flex items-center text-gray-300"><Check className="h-5 w-5 text-purple-500 mr-2" /> 60 Song Credits</li>
+                  <li className="flex items-center text-gray-300"><Check className="h-5 w-5 text-purple-500 mr-2" /> $3.33 per song</li>
+                  <li className="flex items-center text-gray-300"><Check className="h-5 w-5 text-purple-500 mr-2" /> Best Value</li>
+                </ul>
+                <Button asChild className="w-full bg-white/10 hover:bg-white/20 text-white">
+                  <Link href="/signup">Get Started</Link>
+                </Button>
               </div>
-              <JoinCodeClient code={teamData.join_code} />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="py-8 border-t border-white/10 text-center text-gray-500 text-sm">
+        <div className="container mx-auto px-4">
+          &copy; {new Date().getFullYear()} SongTeam. All rights reserved.
         </div>
-
-        {/* Sidebar - Metadata */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Song Details</CardTitle>
-              <CardTitle>Credits</CardTitle>
-              <CardDescription>Shared across all team members.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <span className="text-sm font-medium text-muted-foreground block mb-1">Created</span>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-purple-600" />
-                  <span>{date}</span>
-                </div>
-              </div>
-              
-              <div>
-                <span className="text-sm font-medium text-muted-foreground block mb-1">Genre</span>
-                <span className="capitalize">{song.genre}</span>
-              </div>
-
-              <div>
-                <span className="text-sm font-medium text-muted-foreground block mb-1">Status</span>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
-                  song.status === 'completed' ? 'bg-green-100 text-green-800' :
-                  song.status === 'generating' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {song.status}
-                </span>
-              </div>
-            <CardContent className="flex items-baseline gap-4">
-              <span className="text-4xl font-bold">{teamData.song_credits_remaining}</span>
-              <Button asChild><Link href="/credits/purchase">Buy More</Link></Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <TeamMembers members={members} teamId={teamId} currentUserId={user.id} isOwner={isOwner} />
-      </div>
+      </footer>
     </div>
   )
-    )
-  }
-
-  // If no ID is provided, redirect to dashboard or show list (Dashboard handles the list view)
-  redirect('/dashboard')
 }
