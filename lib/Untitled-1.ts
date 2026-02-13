@@ -2,7 +2,6 @@ fetch('/admin')
 fetch('/api/admin')
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 
 export async function GET() {
   const isValidKey = (key: string | undefined) => key?.startsWith('ey')
@@ -20,8 +19,7 @@ export async function GET() {
   let connectionStatus = 'Checking...'
   
   try {
-    const cookieStore = await cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
     // Try a lightweight query to verify connection (HEAD request)
     const { error } = await supabase.from('teams').select('*', { count: 'exact', head: true })
     

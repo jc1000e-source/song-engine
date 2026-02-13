@@ -1,65 +1,64 @@
 'use client'
 
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import { Loader2, ArrowLeft } from 'lucide-react'
 
 export default function ResetPasswordPage() {
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const supabase = createClient()
 
-  const handleResetPassword = async () => {
-    setError('')
-    
-    // Validation
-    if (!newPassword || !confirmPassword) {
-      setError('Please fill in all fields')
-      return
-    }
-    
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-    
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters')
-      return
-    }
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
 
-    setIsLoading(true)
-    
-    // TODO: Implement actual password reset API call
-    setTimeout(() => {
-      setSuccess(true)
-      setIsLoading(false)
-    }, 1500)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/api/auth/callback?next=/update-password`,
+      })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      setSubmitted(true)
+      toast.success('Password reset link sent!')
+    } catch (err) {
+      toast.error('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (success) {
+  if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-6">
+      <div className="flex min-h-screen items-center justify-center p-4 bg-background">
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center space-y-4">
-            <div className="mx-auto rounded-full bg-green-100 dark:bg-green-900/20 w-16 h-16 flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-500" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Password Reset Complete</h2>
-              <p className="text-muted-foreground">
-                Your password has been successfully updated. You can now log in with your new password.
-              </p>
-            </div>
-            <Button className="w-full mt-4" onClick={() => window.location.href = '/login'}>
-              Go to Login
-            </Button>
+          <CardHeader>
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              We have sent a password reset link to <strong>{email}</strong>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Click the link in the email to reset your password. If you don't see it, check your spam folder.
+            </p>
+            <Link href="/login">
+              <Button variant="outline" className="w-full">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Login
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -67,67 +66,39 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-6">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="mx-auto rounded-full bg-primary/10 w-16 h-16 flex items-center justify-center mb-4">
-            <KeyRound className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Reset your password</h1>
-          <p className="text-muted-foreground">
-            Enter your new password below
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Password</CardTitle>
-            <CardDescription>
-              Choose a strong password to secure your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
+    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Reset Password</CardTitle>
+          <CardDescription>
+            Enter your email address and we'll send you a link to reset your password.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleReset} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New password</Label>
+              <Label htmlFor="email">Email address</Label>
               <Input
-                id="newPassword"
-                type="password"
-                placeholder="********"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={isLoading}
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm new password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="********"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <Button 
-              onClick={handleResetPassword} 
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Resetting...' : 'Confirm'}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Reset Link
             </Button>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="text-center">
+                <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
+                    Back to Login
+                </Link>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

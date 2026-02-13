@@ -1,4 +1,4 @@
-# SongTeam - Complete Installation Guide
+# TeamHighFive - Complete Installation Guide
 
 ## 🎯 What I've Built For You
 
@@ -176,7 +176,7 @@ I've built all the API logic, but you need to add the page UI files. Here's the 
 ### Option 1: Use AI to Generate Pages (Recommended)
 
 Ask me or another AI:
-"Create the login page for my Next.js SongTeam app using the Supabase client at /lib/supabase/client.ts"
+"Create the login page for my Next.js TeamHighFive app using the Supabase client at /lib/supabase/client.ts"
 
 Do this for each page:
 - `/app/(auth)/login/page.tsx`
@@ -369,7 +369,7 @@ Then build your pages using these components.
 ```bash
 git init
 git add .
-git commit -m "Initial commit - SongTeam app"
+git commit -m "Initial commit - TeamHighFive app"
 git remote add origin your-repo-url
 git push -u origin main
 ```

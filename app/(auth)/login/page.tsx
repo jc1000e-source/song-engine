@@ -1,27 +1,22 @@
 'use client'
 
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { siteConfig } from '@/config/site'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
     setError(null)
 
     try {
@@ -31,79 +26,94 @@ export default function LoginPage() {
       })
 
       if (error) {
-        throw error
+        setError(error.message)
+        return
       }
 
       router.push('/dashboard')
       router.refresh()
-    } catch (error: any) {
-      setError(error.message)
+    } catch (err) {
+      setError('An unexpected error occurred')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
-          <CardDescription>
-            Enter your email and password to access your account
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
+    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-primary">
+            {siteConfig.name}
+          </h1>
+          <h2 className="mt-6 text-2xl font-bold tracking-tight text-foreground">
+            Sign in to your account
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Or{' '}
+            <Link href="/signup" className="font-medium text-primary hover:text-primary/90">
+              create a new account
+            </Link>
+          </p>
+        </div>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          <div className="space-y-4 rounded-md shadow-sm">
+            <div>
+              <label htmlFor="email-address" className="block text-sm font-medium leading-6 text-foreground">
+                Email address
+              </label>
+              <input
+                id="email-address"
+                name="email"
                 type="email"
-                placeholder="m@example.com"
+                autoComplete="email"
+                required
+                className="mt-2 block w-full rounded-md border-0 py-1.5 text-foreground bg-background ring-1 ring-inset ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 px-3 shadow-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link 
-                  href="/reset-password" 
-                  className="text-sm text-muted-foreground hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <Input
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium leading-6 text-foreground">
+                Password
+              </label>
+              <input
                 id="password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
+                required
+                className="mt-2 block w-full rounded-md border-0 py-1.5 text-foreground bg-background ring-1 ring-inset ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 px-3 shadow-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In
-            </Button>
-            <div className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
+          </div>
+
+          {error && (
+            <div className="text-sm text-red-500 text-center bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-200 dark:border-red-800">
+              {error}
             </div>
-          </CardFooter>
+          )}
+
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </div>
+          
+          <div className="text-center text-sm">
+             <Link href="/reset-password" className="font-medium text-muted-foreground hover:text-primary transition-colors">
+                Forgot your password?
+             </Link>
+          </div>
         </form>
-      </Card>
+      </div>
     </div>
   )
 }

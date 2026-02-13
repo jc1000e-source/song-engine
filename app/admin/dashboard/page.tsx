@@ -10,6 +10,13 @@ export default async function AdminDashboard() {
   const { count: songCount } = await supabase.from('songs').select('*', { count: 'exact', head: true })
   const { count: accomplishmentCount } = await supabase.from('accomplishments').select('*', { count: 'exact', head: true })
 
+  // Fetch recent activity
+  const { data: recentSongs } = await supabase
+    .from('songs')
+    .select('*, teams(name)')
+    .order('created_at', { ascending: false })
+    .limit(5)
+
   return (
     <div className="space-y-8">
       <div>
@@ -46,6 +53,30 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentSongs?.map((song) => (
+              <div key={song.id} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
+                <div>
+                  <p className="font-medium">{song.title}</p>
+                  <p className="text-sm text-muted-foreground">{song.teams?.name} • {song.genre}</p>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {new Date(song.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+            {(!recentSongs || recentSongs.length === 0) && (
+                <p className="text-sm text-muted-foreground">No recent activity.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
