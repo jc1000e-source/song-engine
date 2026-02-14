@@ -1,11 +1,13 @@
-﻿import { redirect } from 'next/navigation'
+﻿import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import MobileSidebar from '@/components/mobile-sidebar'
 import UserNav from '@/components/user-nav'
 import { siteConfig } from '@/config/site'
 import Link from 'next/link'
 
-
+export default async function DashboardLayout({
+  children,
 }: {
   children: React.ReactNode
 }) {
@@ -19,7 +21,9 @@ import Link from 'next/link'
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="w-full md:w-64 border-r bg-muted/40 hidden md:block fixed h-full">
-        <div className="fitems-cenenk assN.name}</span>
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <span className="">{siteConfig.name}</span>
           </Link>
         </div>
         <DashboardSidebar />

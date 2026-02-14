@@ -425,7 +425,7 @@ A: With templates/AI help: 1-2 weeks
 From scratch: 3-4 weeks
 
 **Q: Can you generate the page files for me?**
-A: Yes! Just ask "Create the [page name] for SongTeam" and I'll generate the complete page code.
+A: Yes! Just ask "Create the [page name] for TeamHighFive" and I'll generate the complete page code.
 
 ---
 

@@ -11,7 +11,7 @@ import { Loader2, Play } from 'lucide-react'
 
 export function PromptTesterClient() {
   const [model, setModel] = useState('gpt-3.5-turbo')
-  const [systemPrompt, setSystemPrompt] = useState('You are a helpful AI assistant.')
+  const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.')
   const [userPrompt, setUserPrompt] = useState('')
   const [response, setResponse] = useState('')
   const [loading, setLoading] = useState(false)
@@ -54,7 +54,7 @@ export function PromptTesterClient() {
         <Card>
             <CardHeader>
                 <CardTitle>Configuration</CardTitle>
-                <CardDescription>Set up the AI model parameters.</CardDescription>
+                <CardDescription>Set up the model parameters.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -116,7 +116,7 @@ export function PromptTesterClient() {
         <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle>Output</CardTitle>
-                <CardDescription>The response from the AI model.</CardDescription>
+                <CardDescription>The response from the model.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 min-h-[400px]">
                 {response ? (
