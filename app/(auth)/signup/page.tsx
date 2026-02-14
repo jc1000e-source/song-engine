@@ -18,6 +18,38 @@ export default function SignupPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md space-y-4 text-center">
+          <h2 className="text-2xl font-bold text-red-600">Configuration Error</h2>
+          <p>Missing Supabase environment variables on the client.</p>
+          <p className="text-sm text-muted-foreground">Please check your <code className="bg-muted p-1 rounded">.env.local</code> file and restart the server.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!supabaseUrl.startsWith('https://') && !supabaseUrl.startsWith('http://')) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md space-y-4 text-center">
+          <h2 className="text-2xl font-bold text-red-600">Configuration Error</h2>
+          <p>Invalid Supabase URL format.</p>
+          <p className="text-sm text-muted-foreground">
+            Your <code>NEXT_PUBLIC_SUPABASE_URL</code> must start with <code>https://</code>.
+          </p>
+          <div className="text-xs text-muted-foreground bg-muted p-2 rounded break-all">
+            Current value: {supabaseUrl}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -36,14 +68,19 @@ export default function SignupPage() {
       })
 
       if (error) {
-        toast.error(error.message)
+        if (error.message === 'Failed to fetch') {
+          toast.error('Network Error: Could not reach Supabase.')
+        } else {
+          toast.error(error.message)
+        }
         return
       }
 
       toast.success('Check your email to confirm your account!')
       router.push('/login')
-    } catch (error) {
-      toast.error('An unexpected error occurred')
+    } catch (error: any) {
+      console.error('Signup error:', error)
+      toast.error(error?.message || 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }

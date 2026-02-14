@@ -2,19 +2,43 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [success, setSuccess] = useState(false)
   const supabase = createClient()
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md space-y-4 text-center">
+          <h2 className="text-2xl font-bold text-red-600">Configuration Error</h2>
+          <p>Missing Supabase environment variables on the client.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!supabaseUrl.startsWith('https://') && !supabaseUrl.startsWith('http://')) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md space-y-4 text-center">
+          <h2 className="text-2xl font-bold text-red-600">Configuration Error</h2>
+          <p>Invalid Supabase URL format.</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,79 +50,75 @@ export default function ResetPasswordPage() {
       })
 
       if (error) {
-        toast.error(error.message)
+        if (error.message === 'Failed to fetch') {
+          toast.error('Network Error: Could not reach Supabase. Check your production environment variables.')
+        } else {
+          toast.error(error.message)
+        }
         return
       }
 
-      setSubmitted(true)
-      toast.success('Password reset link sent!')
-    } catch (err) {
-      toast.error('An unexpected error occurred')
+      setSuccess(true)
+      toast.success('Password reset email sent!')
+    } catch (error: any) {
+      toast.error(error?.message || 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
   }
 
-  if (submitted) {
+  if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Check your email</CardTitle>
-            <CardDescription>
-              We have sent a password reset link to <strong>{email}</strong>.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Click the link in the email to reset your password. If you don't see it, check your spam folder.
-            </p>
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md space-y-8 text-center">
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-foreground">Check your email</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We have sent a password reset link to <strong>{email}</strong>.
+          </p>
+          <Button asChild className="mt-4" variant="outline">
             <Link href="/login">
-              <Button variant="outline" className="w-full">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Login
-              </Button>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
             </Link>
-          </CardContent>
-        </Card>
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Reset Password</CardTitle>
-          <CardDescription>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md space-y-8">
+        <div>
+          <Link href="/login" className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
+          </Link>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-foreground">
+            Reset Password
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
             Enter your email address and we'll send you a link to reset your password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleReset} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Send Reset Link
-            </Button>
-            <div className="text-center">
-                <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
-                    Back to Login
-                </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+
+        <form onSubmit={handleReset} className="mt-8 space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send Reset Link
+          </Button>
+        </form>
+      </div>
     </div>
   )
 }

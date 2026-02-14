@@ -1,159 +1,98 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Music, Users, Trophy, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { Music, Users, CreditCard, Trophy } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) return null
 
   // Fetch user's teams
-  const { data: teamMembers } = await supabase
+  const { data: members } = await supabase
     .from('team_members')
     .select('role, teams(*)')
     .eq('user_id', user.id)
 
-  const teams = teamMembers?.map((tm: any) => tm.teams).filter(Boolean) || []
-  const teamIds = teams.map((t: any) => t.id)
+  const teams = members?.map((m: any) => m.teams).filter(Boolean) || []
+  const currentTeam = teams[0] // Default to first team for now
 
-  // Fetch recent songs across all teams
+  // Fetch recent songs if a team exists
   let recentSongs: any[] = []
-  if (teamIds.length > 0) {
+  let memberCount = 0
+  
+  if (currentTeam) {
     const { data: songs } = await supabase
       .from('songs')
-      .select('*, teams(name)')
-      .in('team_id', teamIds)
+      .select('*')
+      .eq('team_id', currentTeam.id)
       .order('created_at', { ascending: false })
       .limit(5)
-    
     recentSongs = songs || []
+
+    const { count } = await supabase
+        .from('team_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_id', currentTeam.id)
+    memberCount = count || 0
   }
 
-  const totalCredits = teams.reduce((acc: number, t: any) => acc + (t.credits || 0), 0)
-
   return (
-    <div className="flex-1 space-y-8 p-8 pt-6">
+    <div className="flex-1 space-y-4">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <div className="flex items-center space-x-2">
-          <Link href="/songs/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Generate Song
-            </Button>
-          </Link>
-        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {!currentTeam ? (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Teams</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Welcome to TeamHighFive!</CardTitle>
+            <CardDescription>You are not part of any team yet.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{teams.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Active memberships
-            </p>
+          <CardContent className="space-y-4">
+            <p>Create a team to start generating songs for your accomplishments.</p>
+            <div className="flex gap-4">
+                <Button asChild>
+                    <Link href="/dashboard/team/create">Create Team</Link>
+                </Button>
+                 <Button asChild variant="outline">
+                    <Link href="/dashboard/team/join">Join Team</Link>
+                </Button>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Credits</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">
-                    {totalCredits}
-                </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Team Credits</CardTitle>
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{currentTeam.credits}</div>
                 <p className="text-xs text-muted-foreground">
-                    Available across all teams
+                  <Link href="/dashboard/credits" className="hover:underline">Buy more</Link>
                 </p>
-            </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Songs</CardTitle>
-            <CardDescription>
-              Latest hits generated by your teams.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-                {recentSongs.length === 0 ? (
-                    <div className="text-center py-6">
-                        <p className="text-sm text-muted-foreground mb-4">No songs generated yet.</p>
-                        <Link href="/songs/new">
-                            <Button variant="outline" size="sm">Create your first song</Button>
-                        </Link>
-                    </div>
-                ) : (
-                    recentSongs.map((song) => (
-                        <div key={song.id} className="flex items-center">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                                <Music className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="ml-4 space-y-1">
-                                <p className="text-sm font-medium leading-none">{song.title}</p>
-                                <p className="text-sm text-muted-foreground">{song.teams?.name} • {song.genre}</p>
-                            </div>
-                            <div className="ml-auto font-medium">
-                                <Link href={`/songs/${song.id}`}>
-                                    <Button variant="ghost" size="sm">
-                                        View <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Your Teams</CardTitle>
-            <CardDescription>
-              Manage your teams and credits.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-                {teams.length === 0 ? (
-                    <div className="text-center py-4">
-                        <p className="text-sm text-muted-foreground mb-4">You haven't joined any teams yet.</p>
-                        <Link href="/teams/create">
-                            <Button variant="outline" size="sm">Create Team</Button>
-                        </Link>
-                    </div>
-                ) : (
-                    teams.map((team: any) => (
-                        <div key={team.id} className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium leading-none">{team.name}</p>
-                                <p className="text-xs text-muted-foreground">{team.credits} credits available</p>
-                            </div>
-                            <Link href={`/team/${team.id}`}>
-                                <Button variant="outline" size="sm">Manage</Button>
-                            </Link>
-                        </div>
-                    ))
-                )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Team Members</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{memberCount}</div>
+                 <p className="text-xs text-muted-foreground">
+                  <Link href="/dashboard/team" className="hover:underline">Manage team</Link>
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
