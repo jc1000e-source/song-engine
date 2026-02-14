@@ -5,23 +5,10 @@ import { revalidatePath } from 'next/cache'
 
 export async function addAccomplishment(teamId: string, description: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return { error: 'You must be logged in to add an accomplishment' }
-  }
-
-  // Verify user is a member of the team
-  const { data: membership } = await supabase
-    .from('team_members')
-    .select('role')
-    .eq('team_id', teamId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!membership) {
-    return { error: 'You are not a member of this team' }
+    return { error: 'Unauthorized' }
   }
 
   const { error } = await supabase
@@ -29,76 +16,62 @@ export async function addAccomplishment(teamId: string, description: string) {
     .insert({
       team_id: teamId,
       user_id: user.id,
-      description: description,
+      description,
+      user_name: user.user_metadata.full_name || user.email
     })
 
   if (error) {
     return { error: error.message }
   }
 
-  revalidatePath('/accomplishments')
-  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/accomplishments')
   return { success: true }
 }
 
-export async function removeTeamMember(teamId: string, memberId: string) {
+export async function removeTeamMember(teamId: string, userId: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    throw new Error('You must be logged in')
+    return { error: 'Unauthorized' }
   }
 
-  // Verify current user is owner
-  const { data: currentUserMembership } = await supabase
+  // Check if current user is owner
+  const { data: membership } = await supabase
     .from('team_members')
     .select('role')
     .eq('team_id', teamId)
     .eq('user_id', user.id)
     .single()
 
-  if (currentUserMembership?.role !== 'owner') {
-    throw new Error('Only team owners can remove members')
+  if (membership?.role !== 'owner') {
+    return { error: 'Only team owners can remove members' }
   }
 
-  if (memberId === user.id) {
-      throw new Error('You cannot remove yourself from the team')
-  }
+  const { error } = await supabase.from('team_members').delete().eq('team_id', teamId).eq('user_id', userId)
 
-  const { error } = await supabase
-    .from('team_members')
-    .delete()
-    .eq('team_id', teamId)
-    .eq('user_id', memberId)
+  if (error) return { error: error.message }
 
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  revalidatePath(`/team/${teamId}`)
+  revalidatePath(`/dashboard/team/${teamId}`)
   return { success: true }
 }
 
 export async function updateTeamName(teamId: string, name: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    throw new Error('You must be logged in')
-  }
+  if (!user) return { error: 'Unauthorized' }
 
-  // Verify current user is owner
-  const { data: currentUserMembership } = await supabase
+  // Check ownership
+  const { data: membership } = await supabase
     .from('team_members')
     .select('role')
     .eq('team_id', teamId)
     .eq('user_id', user.id)
     .single()
 
-  if (currentUserMembership?.role !== 'owner') {
-    throw new Error('Only team owners can update settings')
+  if (membership?.role !== 'owner') {
+    return { error: 'Only team owners can update settings' }
   }
 
   const { error } = await supabase
@@ -106,41 +79,33 @@ export async function updateTeamName(teamId: string, name: string) {
     .update({ name })
     .eq('id', teamId)
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  if (error) return { error: error.message }
 
-  revalidatePath(`/team/${teamId}`)
+  revalidatePath(`/dashboard/team/${teamId}`)
   return { success: true }
 }
 
 export async function deleteTeam(teamId: string) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    throw new Error('You must be logged in')
-  }
+  if (!user) return { error: 'Unauthorized' }
 
-  // Verify current user is owner
-  const { data: currentUserMembership } = await supabase
+  // Check ownership
+  const { data: membership } = await supabase
     .from('team_members')
     .select('role')
     .eq('team_id', teamId)
     .eq('user_id', user.id)
     .single()
 
-  if (currentUserMembership?.role !== 'owner') {
-    throw new Error('Only team owners can delete teams')
+  if (membership?.role !== 'owner') {
+    return { error: 'Only team owners can delete teams' }
   }
 
   const { error } = await supabase.from('teams').delete().eq('id', teamId)
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  if (error) return { error: error.message }
 
-  revalidatePath('/dashboard')
   return { success: true }
 }

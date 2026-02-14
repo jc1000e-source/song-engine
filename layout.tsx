@@ -6,7 +6,7 @@ import { Toaster } from 'sonner'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'SongTeam - Turn Team Wins Into Custom Songs',
+  title: 'TeamHighFive - Turn Team Wins Into Custom Songs',
   description: 'Celebrate your team\'s accomplishments with AI-generated songs',
 }
 

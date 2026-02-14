@@ -1,20 +1,32 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Copy } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Check, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function JoinCodeClient({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false)
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(code)
-    toast.success('Join code copied to clipboard!')
+    setCopied(true)
+    toast.success('Join code copied to clipboard')
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 p-4 bg-muted rounded-lg border">
-      <p className="font-mono text-lg tracking-widest text-muted-foreground">{code}</p>
-      <Button variant="ghost" size="icon" onClick={copyToClipboard} aria-label="Copy join code">
-        <Copy className="h-5 w-5" />
+    <div className="flex items-center space-x-2">
+      <div className="grid flex-1 gap-2">
+        <Input
+          readOnly
+          value={code}
+          className="font-mono text-lg text-center tracking-widest"
+        />
+      </div>
+      <Button type="submit" size="icon" onClick={copyToClipboard} variant="outline">
+        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </Button>
     </div>
   )
