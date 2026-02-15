@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
@@ -45,8 +45,11 @@ export default function ResetPasswordPage() {
     setLoading(true)
 
     try {
+      const redirectUrl = `${window.location.origin}/api/auth/callback?next=/update-password`
+      console.log('Sending password reset with redirect:', redirectUrl)
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/update-password`,
+        redirectTo: redirectUrl,
       })
 
       if (error) {

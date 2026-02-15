@@ -83,6 +83,8 @@ export default function LoginPage() {
           toast.error('Network Error: Could not reach Supabase. Check console (F12) for details.')
         } else if (error.message === 'Invalid login credentials') {
           toast.error('Incorrect email or password.')
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Please confirm your email first. Check your inbox for the confirmation link.')
         } else {
           toast.error(error.message)
         }
